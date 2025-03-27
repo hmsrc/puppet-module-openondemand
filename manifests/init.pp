@@ -357,7 +357,7 @@ class openondemand (
   },
   Optional[Hash] $mellon_config = {},
   # Merge default config with updated configs
-  Optional[Hash] $mellon_merged_config = merge($mellon_default_config, $mellon_config),
+  #Optional[Hash] $mellon_merged_config = undef,
 
   # Misc configs
   Stdlib::Absolutepath $web_directory = '/var/www/ood',
@@ -597,6 +597,9 @@ class openondemand (
     'bc_desktop' => { 'package' => 'ondemand', 'manage_package' => false },
   }
 
+  # Merge default config with updated configs
+  $mellon_merged_config = merge($mellon_default_config, $mellon_config)
+  
   $ondemand_config = {
     'pinned_apps' => $pinned_apps,
     'pinned_apps_menu_length' => $pinned_apps_menu_length,
