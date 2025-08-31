@@ -100,11 +100,13 @@ class openondemand::config {
     $maintenance_enable_ensure = 'absent'
   }
 
-  file { '/etc/ood/maintenance.enable':
-    ensure => $maintenance_enable_ensure,
-    owner  => 'root',
-    group  => 'root',
-    mode   => '0644',
+  if $openondemand::maintenance_enabled =~ NotUndef {
+    file { '/etc/ood/maintenance.enable':
+      ensure => $maintenance_enable_ensure,
+      owner  => 'root',
+      group  => 'root',
+      mode   => '0644',
+    }
   }
 
   file { '/etc/ood/config':
@@ -298,6 +300,34 @@ class openondemand::config {
       group   => 'ondemand-dex',
       mode    => '0600',
       require => Exec['ood-portal-generator-generate'],
+    }
+  }
+
+  # deploy script to generate mellon metadata
+  if $openondemand::auth_type == 'mellon' {
+    file {"${openondemand::mellon_dir}/00-auth-mellon.conf":
+      content => template('openondemand/auth_mellon.conf.erb'),
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0755'
+    }
+    file { '/usr/local/bin/mellon_ood_metadata.sh':
+      content => template('openondemand/generate_ood_mellon_metadata.sh.erb'),
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0755',
+    }
+    if $openondemand::mellon_manage_metadata == true {
+      # Run Metadata creation script if files doesn't exist
+      exec { '/usr/local/bin/mellon_ood_metadata.sh':
+        creates => [
+          "${openondemand::mellon_dir}/mellon.cert",
+          "${openondemand::mellon_dir}/mellon.key",
+          "${openondemand::mellon_dir}/mellon_metadata.xml",
+        ],
+        require => File['/usr/local/bin/mellon_ood_metadata.sh'],
+        notify  => Class['apache::service'],
+      }
     }
   }
 
